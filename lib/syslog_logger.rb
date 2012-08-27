@@ -64,6 +64,7 @@ class SyslogLogger
         return true if #{LOGGER_LEVEL_MAP[meth]} < @level
         message ||= yield if block_given?
         if message
+          message = message.dup.force_encoding('binary')
           message.split("\n").each do |line|
             SYSLOG.#{LOGGER_MAP[meth]} clean(line)
           end
