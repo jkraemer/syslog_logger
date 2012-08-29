@@ -64,9 +64,9 @@ class SyslogLogger
         return true if #{LOGGER_LEVEL_MAP[meth]} < @level
         message ||= yield if block_given?
         if message
-          message = message.dup.force_encoding('binary')
+          message = clean(message).force_encoding('binary')
           message.split("\n").each do |line|
-            SYSLOG.#{LOGGER_MAP[meth]} clean(line)
+            SYSLOG.#{LOGGER_MAP[meth]} line
           end
         end
         return true
@@ -107,9 +107,9 @@ class SyslogLogger
   def add(severity, message = nil, progname = nil, &block)
     severity ||= Logger::UNKNOWN
     return true if severity < @level
-    message = clean(message || block.call)
+    message = clean(message || block.call).force_encoding('binary')
     message.split("\n").each do |line|
-      SYSLOG.send LEVEL_LOGGER_MAP[severity], clean(line)
+      SYSLOG.send LEVEL_LOGGER_MAP[severity], line
     end
     return true
   end
@@ -141,4 +141,3 @@ class SyslogLogger
   end
 
 end
-
