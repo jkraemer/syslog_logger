@@ -64,8 +64,7 @@ class SyslogLogger
         return true if #{LOGGER_LEVEL_MAP[meth]} < @level
         message ||= yield if block_given?
         if message
-          message = clean(message).force_encoding('binary')
-          message.split("\n").each do |line|
+          clean(message).split("\n").each do |line|
             SYSLOG.#{LOGGER_MAP[meth]} line
           end
         end
@@ -107,8 +106,7 @@ class SyslogLogger
   def add(severity, message = nil, progname = nil, &block)
     severity ||= Logger::UNKNOWN
     return true if severity < @level
-    message = clean(message || block.call).force_encoding('binary')
-    message.split("\n").each do |line|
+    clean(message || block.call).split("\n").each do |line|
       SYSLOG.send LEVEL_LOGGER_MAP[severity], line
     end
     return true
@@ -133,7 +131,7 @@ class SyslogLogger
   # Clean up messages so they're nice and pretty.
 
   def clean(message)
-    message = message.to_s.dup
+    message = message.to_s.dup.force_encoding('binary')
     message.strip!
     message.gsub!(/%/, '%%') # syslog(3) freaks on % (printf)
     message.gsub!(/\e\[[^m]*m/, '') # remove useless ansi color codes
