@@ -55,6 +55,7 @@ class SyslogLogger
     LEVEL_LOGGER_MAP[level] = LOGGER_MAP[severity]
   end
 
+  @@lock = Mutex.new
   ##
   # Builds a methods for level +meth+.
 
@@ -64,9 +65,9 @@ class SyslogLogger
         return true if #{LOGGER_LEVEL_MAP[meth]} < @level
         message ||= yield if block_given?
         if message
-          clean(message).split("\n").each do |line|
-            SYSLOG.#{LOGGER_MAP[meth]} line
-          end
+          cleaned_messages = clean(message).split("\n")
+          syslog_level = "#{LOGGER_MAP[meth]}".to_sym
+          actually_log(syslog_level, cleaned_messages)
         end
         return true
       end
@@ -96,19 +97,24 @@ class SyslogLogger
   def initialize(program_name = 'rails', logopts = nil, facility = nil)
     @level = Logger::DEBUG
 
-    return if defined? SYSLOG
-    self.class.const_set :SYSLOG, Syslog.open(program_name, logopts, facility)
+    @opts = [program_name, logopts, facility]
   end
 
-  ##
+  def actually_log(syslog_level, messages)
+      @@lock.synchronize do
+         Syslog.open(*@opts) do
+           messages.each { |line| Syslog.send syslog_level, line }
+         end
+      end
+  end
+
   # Almost duplicates Logger#add.  +progname+ is ignored.
 
   def add(severity, message = nil, progname = nil, &block)
     severity ||= Logger::UNKNOWN
     return true if severity < @level
-    clean(message || block.call).split("\n").each do |line|
-      SYSLOG.send LEVEL_LOGGER_MAP[severity], line
-    end
+    cleaned_messages = clean(message || block.call).split("\n")
+    actually_log LEVEL_LOGGER_MAP[severity], cleaned_messages
     return true
   end
 
