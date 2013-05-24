@@ -101,11 +101,11 @@ class SyslogLogger
   end
 
   def actually_log(syslog_level, messages)
-      @@lock.synchronize do
-         Syslog.open(*@opts) do
-           messages.each { |line| Syslog.send syslog_level, line }
-         end
+    @@lock.synchronize do
+      Syslog.open(*@opts) do
+        messages.each { |line| Syslog.send syslog_level, line }
       end
+    end
   end
 
   # Almost duplicates Logger#add.  +progname+ is ignored.
@@ -137,7 +137,10 @@ class SyslogLogger
   # Clean up messages so they're nice and pretty.
 
   def clean(message)
-    message = message.to_s.dup.force_encoding('binary')
+    message = message.to_s.dup
+    if message.respond_to?(:force_encoding)
+      message = message.force_encoding('binary')
+    end
     message.strip!
     message.gsub!(/%/, '%%') # syslog(3) freaks on % (printf)
     message.gsub!(/\e\[[^m]*m/, '') # remove useless ansi color codes
