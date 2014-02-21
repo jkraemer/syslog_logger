@@ -88,6 +88,11 @@ class SyslogLogger
   attr_accessor :level
 
   ##
+  # Formatter (set by some ActiveSupport classes)
+
+  attr_accessor :formatter
+
+  ##
   # Fills in variables for Logger compatibility.  If this is the first
   # instance of SyslogLogger, +program_name+ may be set to change the logged
   # program name.
