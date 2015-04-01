@@ -106,6 +106,7 @@ class SyslogLogger
   end
 
   def actually_log(syslog_level, messages)
+    messages = format_lines messages
     @@lock.synchronize do
       Syslog.open(*@opts) do
         messages.each { |line| Syslog.send syslog_level, line }
@@ -152,4 +153,11 @@ class SyslogLogger
     return message
   end
 
+  def format_lines(messages)
+    if formatter
+      messages.map{ |line| formatter.call Logger::UNKNOWN, nil, nil, line }
+    else
+      messages
+    end
+  end
 end
